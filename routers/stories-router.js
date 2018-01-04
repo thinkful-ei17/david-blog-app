@@ -5,24 +5,24 @@ const router = express.Router();
 
 var data = require('../db/dummy-data');
 
-// const { DATABASE } = require('../config');
-// const knex = require('knex')(DATABASE);
+const { DATABASE } = require('../config');
+const knex = require('knex')(DATABASE);
 
 /* ========== GET/READ ALL ITEMS ========== */
-router.get('/stories', (req, res) => {
-  if (req.query.search) {
-    const filtered = data.filter((obj) => obj.title.includes(req.query.search));
-    res.json(filtered);
-  } else {
-    res.json(data);
-  }
+router.get('/stories', (req, res, next) => {
+  knex('stories')
+    .select('id', 'title', 'content')
+    .then(results => res.json(results))
+    .catch(next);
 });
 
 /* ========== GET/READ SINGLE ITEMS ========== */
-router.get('/stories/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const item = data.find((obj) => obj.id === id);
-  res.json(item);
+router.get('/stories/:id', (req, res, next) => {
+  knex('stories')
+    .select('id', 'title', 'content')
+    .where('id', req.params.id)
+    .then(result => res.json(result))
+    .catch(next);
 });
 
 /* ========== POST/CREATE ITEM ========== */
