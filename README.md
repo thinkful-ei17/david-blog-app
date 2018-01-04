@@ -34,8 +34,8 @@ You have been hired to complete an API for a blog app. The previous developer ha
   - [x] Update `config.js` with DB connection info
   - [x] Import `knex` and database config into the router file
   - [x] Update GET `/api/v1/stories` endpoint to use `knex.select()...`
-  - [ ] Update GET `/api/v1/stories/:id` endpoint to use `knex.select()...`
-  - [ ] Update POST `/api/v1/stories/` endpoint to use `knex.insert()...`
+  - [x] Update GET `/api/v1/stories/:id` endpoint to use `knex.select()...`
+  - [x] Update POST `/api/v1/stories/` endpoint to use `knex.insert()...`
   - [ ] Update PUT `/api/v1/stories/:id` endpoint to use `knex.update()...`
   - [ ] Update DELETE `/api/v1/stories/:id` endpoint to use `knex.del()...`
 

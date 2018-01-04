@@ -2,16 +2,20 @@
 
 const express = require('express');
 const router = express.Router();
+const bodyParser = require('body-parser');
 
 var data = require('../db/dummy-data');
 
 const { DATABASE } = require('../config');
 const knex = require('knex')(DATABASE);
 
+router.use(bodyParser.json());
+
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/stories', (req, res, next) => {
   knex('stories')
     .select('id', 'title', 'content')
+    .orderBy('id')
     .then(results => res.json(results))
     .catch(next);
 });
@@ -21,43 +25,83 @@ router.get('/stories/:id', (req, res, next) => {
   knex('stories')
     .select('id', 'title', 'content')
     .where('id', req.params.id)
-    .then(result => res.json(result))
+    .then(results => {
+      if (results.length === 0) {
+        next();
+      } else {
+        res.json(results[0]);
+      }
+    })
     .catch(next);
 });
 
 /* ========== POST/CREATE ITEM ========== */
-router.post('/stories', (req, res) => {
-  const {title, content} = req.body;
+router.post('/stories', (req, res, next) => {
+  const required = ['title'];
   
-  /***** Never Trust Users! *****/  
-  const newItem = {
-    id: data.nextVal++,
-    title: title,
-    content: content
-  };
-  data.push(newItem);
+  required.forEach(requiredField => {
+    if (!(requiredField in req.body)) {
+      const errorMessage = `You're missing a required field: ${requiredField}`;
+      console.error(errorMessage);
+      res.status(400).end();
+      return;
+    }
+  });
 
-  res.location(`${req.originalUrl}/${newItem.id}`).status(201).json(newItem);
+  knex('stories')
+    .insert({
+      title: req.body.title, 
+      content: req.body.content
+    })
+    .returning(['id', 'title', 'content'])    
+    .then(results => res.location(`/stories/${results.id}`).status(201).json(results[0]))
+    .catch(next);
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
-router.put('/stories/:id', (req, res) => {
-  const {title, content} = req.body;
+router.put('/stories/:id', (req, res, next) => {
   
-  /***** Never Trust Users! *****/
+  const required = ['id', 'title'];
   
-  const id = Number(req.params.id);
-  const item = data.find((obj) => obj.id === id);
-  Object.assign(item, {title, content});
-  res.json(item);
+  required.forEach(requiredField => {
+    if (!(requiredField in req.body)) {
+      const errorMessage = `You're missing a required field: ${requiredField}`;
+      console.error(errorMessage);
+      return res.status(400).send(errorMessage);
+    }
+  });
+
+  if (parseInt(req.params.id) !== req.body.id) {
+    const errorMessage = `Request path id (${req.params.id}) and request body id (${req.body.id}) must match`;
+    console.error(errorMessage);
+    return res.status(400).send(errorMessage);
+  }
+
+  knex('stories')
+    .where('id', req.params.id)
+    .update({
+      title: req.body.title,
+      content: req.body.content
+    })
+    .returning(['id', 'title', 'content'])
+    .then(results => {
+      if (results.length === 0) {
+        const errorMessage = `Id ${req.params.id} does not exist`;
+        return res.status(404).send(errorMessage);
+      } else {
+        res.json(results[0]);
+      }
+    })
+    .catch(next);
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
-router.delete('/stories/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const index = data.findIndex((obj) => obj.id === id);
-  data.splice(index, 1);
-  res.status(204).end();
+router.delete('/stories/:id', (req, res, next) => {
+  knex('stories')
+    .where('id', req.params.id)
+    .del()
+    .then(res.status(204).end())
+    .catch(next);
 });
 
 module.exports = router;
